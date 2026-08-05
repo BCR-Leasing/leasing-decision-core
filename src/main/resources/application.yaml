@@ -1,3 +1,33 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: leasingdecisioncore
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER}
+    hikari:
+      read-only: true
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+
+decision-core:
+  capabilities:
+    sibcor:
+      base-url: ${SIBCOR_BASE_URL}
+      blacklist-path: ${SIBCOR_BLACKLIST_PATH:/blacklist}
+      connect-timeout: ${SIBCOR_CONNECT_TIMEOUT:3s}
+      read-timeout: ${SIBCOR_READ_TIMEOUT:15s}
+      username: ${SIBCOR_USERNAME}
+      password: ${SIBCOR_PASSWORD}
+      headers:
+        X-Application-Code: ${SIBCOR_APPLICATION_CODE}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
