@@ -1,28 +1,52 @@
 package ro.bcrleasing.leasingdecisioncore.capability.sibcor;
 
-import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
+
 @Validated
-@ConfigurationProperties(prefix = "decision-core.capabilities.sibcor")
+@ConfigurationProperties(
+        prefix = "decision-core.capabilities.sibcor"
+)
 public class SibcorProperties {
 
     @NotBlank
     private String baseUrl;
 
     @NotBlank
-    private String blacklistPath;
+    private String blacklistPath = "blacklist";
 
-    private Duration connectTimeout = Duration.ofSeconds(3);
-    private Duration readTimeout = Duration.ofSeconds(15);
-    private String username;
-    private String password;
-    private Map<String, String> headers = new LinkedHashMap<>();
+    @NotBlank
+    private String authBaseUrl;
+
+    @NotBlank
+    private String authClientId;
+
+    @NotBlank
+    private String authGrantType = "client_credentials";
+
+    @NotBlank
+    private String authUsername;
+
+    @NotBlank
+    private String authPassword;
+
+    @NotNull
+    private Duration connectTimeout = Duration.ofSeconds(5);
+
+    @NotNull
+    private Duration readTimeout = Duration.ofSeconds(30);
+
+    @NotNull
+    private Duration tokenRefreshBeforeExpiry =
+            Duration.ofMinutes(5);
+
+    @NotNull
+    private Duration fallbackTokenTtl =
+            Duration.ofMinutes(50);
 
     public String getBaseUrl() {
         return baseUrl;
@@ -38,6 +62,46 @@ public class SibcorProperties {
 
     public void setBlacklistPath(String blacklistPath) {
         this.blacklistPath = blacklistPath;
+    }
+
+    public String getAuthBaseUrl() {
+        return authBaseUrl;
+    }
+
+    public void setAuthBaseUrl(String authBaseUrl) {
+        this.authBaseUrl = authBaseUrl;
+    }
+
+    public String getAuthClientId() {
+        return authClientId;
+    }
+
+    public void setAuthClientId(String authClientId) {
+        this.authClientId = authClientId;
+    }
+
+    public String getAuthGrantType() {
+        return authGrantType;
+    }
+
+    public void setAuthGrantType(String authGrantType) {
+        this.authGrantType = authGrantType;
+    }
+
+    public String getAuthUsername() {
+        return authUsername;
+    }
+
+    public void setAuthUsername(String authUsername) {
+        this.authUsername = authUsername;
+    }
+
+    public String getAuthPassword() {
+        return authPassword;
+    }
+
+    public void setAuthPassword(String authPassword) {
+        this.authPassword = authPassword;
     }
 
     public Duration getConnectTimeout() {
@@ -56,29 +120,24 @@ public class SibcorProperties {
         this.readTimeout = readTimeout;
     }
 
-    public String getUsername() {
-        return username;
+    public Duration getTokenRefreshBeforeExpiry() {
+        return tokenRefreshBeforeExpiry;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setTokenRefreshBeforeExpiry(
+            Duration tokenRefreshBeforeExpiry
+    ) {
+        this.tokenRefreshBeforeExpiry =
+                tokenRefreshBeforeExpiry;
     }
 
-    public String getPassword() {
-        return password;
+    public Duration getFallbackTokenTtl() {
+        return fallbackTokenTtl;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers == null
-                ? new LinkedHashMap<>()
-                : new LinkedHashMap<>(headers);
+    public void setFallbackTokenTtl(
+            Duration fallbackTokenTtl
+    ) {
+        this.fallbackTokenTtl = fallbackTokenTtl;
     }
 }

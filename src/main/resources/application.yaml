@@ -17,14 +17,21 @@ spring:
 decision-core:
   capabilities:
     sibcor:
-      base-url: ${SIBCOR_BASE_URL}
-      blacklist-path: ${SIBCOR_BLACKLIST_PATH:/blacklist}
-      connect-timeout: ${SIBCOR_CONNECT_TIMEOUT:3s}
-      read-timeout: ${SIBCOR_READ_TIMEOUT:15s}
-      username: ${SIBCOR_USERNAME}
-      password: ${SIBCOR_PASSWORD}
-      headers:
-        X-Application-Code: ${SIBCOR_APPLICATION_CODE}
+      base-url: ${SIBCOR_BASE_URL:https://sibcor-staging.integration.bcrleasing.ro/api/v1/bcrleasing/}
+      blacklist-path: ${SIBCOR_BLACKLIST_PATH:blacklist}
+
+      auth-base-url: ${SIBCOR_AUTH_BASE_URL:https://sibcor-staging.integration.bcrleasing.ro/authserver/oauth/token}
+      auth-client-id: ${SIBCOR_AUTH_CLIENT_ID}
+      auth-grant-type: ${SIBCOR_AUTH_GRANT_TYPE}
+
+      auth-username: ${SIBCOR_AUTH_USERNAME}
+      auth-password: ${SIBCOR_AUTH_PASSWORD}
+
+      connect-timeout: ${SIBCOR_CONNECT_TIMEOUT:5s}
+      read-timeout: ${SIBCOR_READ_TIMEOUT:30s}
+
+      token-refresh-before-expiry: ${SIBCOR_TOKEN_REFRESH_BEFORE_EXPIRY:5m}
+      fallback-token-ttl: ${SIBCOR_FALLBACK_TOKEN_TTL:50m}
 
 management:
   endpoints:
