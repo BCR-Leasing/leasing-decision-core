@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ro.bcrleasing.leasingdecisioncore.blacklist.application.BlacklistAskCommand;
 import ro.bcrleasing.leasingdecisioncore.blacklist.application.CheckBlacklistUseCase;
@@ -19,6 +20,7 @@ public class AskOrchestrator {
     private final CheckBlacklistUseCase checkBlacklistUseCase;
     private final Clock clock;
 
+    @Autowired
     public AskOrchestrator(DecisionContextFactory contextFactory, CheckBlacklistUseCase checkBlacklistUseCase) {
         this(contextFactory, checkBlacklistUseCase, Clock.systemUTC());
     }

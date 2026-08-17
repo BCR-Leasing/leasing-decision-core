@@ -33,8 +33,7 @@ public class BlacklistOrchestrator implements CheckBlacklistUseCase {
 
     @Override
     public BlacklistDecision check(BlacklistAskCommand command) {
-        BlacklistSubjectProvider provider =
-                subjectProviderRegistry.get(command.subjectType());
+        BlacklistSubjectProvider provider = subjectProviderRegistry.get(command.subjectType());
 
         BlacklistSubject subject = provider.loadSubject(
                 command.leaseId(),
@@ -52,13 +51,9 @@ public class BlacklistOrchestrator implements CheckBlacklistUseCase {
             );
         }
 
-        SibcorFacts sibcorFacts =
-                sibcorPort.checkBlacklist(subject);
+        SibcorFacts sibcorFacts = sibcorPort.checkBlacklist(subject);
 
-        InternalNegativeInformationFacts internalFacts =
-                negativeInformationPort.findByIdentifier(
-                        subject.identifier()
-                );
+        InternalNegativeInformationFacts internalFacts = negativeInformationPort.findByIdentifier(subject.identifier());
 
         return decisionEvaluator.evaluate(
                 new PreparedBlacklistInput(

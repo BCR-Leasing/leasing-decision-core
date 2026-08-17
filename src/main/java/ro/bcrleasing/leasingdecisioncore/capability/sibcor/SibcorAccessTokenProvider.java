@@ -1,5 +1,6 @@
 package ro.bcrleasing.leasingdecisioncore.capability.sibcor;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class SibcorAccessTokenProvider {
     private final Clock clock;
     private volatile CachedToken cachedToken;
 
+    @Autowired
     public SibcorAccessTokenProvider(
             @Qualifier("sibcorRestClient")
             RestClient restClient,
