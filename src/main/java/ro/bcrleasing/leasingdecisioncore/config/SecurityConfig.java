@@ -24,6 +24,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/v1/blacklist/**")
                         .permitAll()
+                        .requestMatchers("/api/v1/dow-jones/**")
+                        .permitAll()
                         .anyRequest()
                         .permitAll()
                 );

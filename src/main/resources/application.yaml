@@ -34,10 +34,11 @@ springdoc:
 
   packages-to-scan:
     - ro.bcrleasing.leasingdecisioncore.blacklist.api
+    - ro.bcrleasing.leasingdecisioncore.dowjones.api
 
   paths-to-match:
     - /api/v1/blacklist/**
-
+    - /api/v1/dow-jones/**
 
 decision-core:
   capabilities:
@@ -55,6 +56,22 @@ decision-core:
       read-timeout: ${SIBCOR_READ_TIMEOUT:30s}
       token-refresh-before-expiry: ${SIBCOR_TOKEN_REFRESH_BEFORE_EXPIRY:5m}
       fallback-token-ttl: ${SIBCOR_FALLBACK_TOKEN_TTL:50m}
+
+    dow-jones:
+      url: ${DOW_JONES_URL:https://riskcenter.dowjones.com/dashboard}
+      username: ${DOW_JONES_USERNAME}
+      password: ${DOW_JONES_PASSWORD}
+      headless: ${DOW_JONES_HEADLESS:false}
+      ignore-https-errors: ${DOW_JONES_IGNORE_HTTPS_ERRORS:false}
+      browser-executable-path: ${DOW_JONES_BROWSER_EXECUTABLE_PATH}
+      slow-mo-ms: ${DOW_JONES_SLOW_MO_MS:250}
+      navigation-timeout: ${DOW_JONES_NAVIGATION_TIMEOUT:30s}
+      search-timeout: ${DOW_JONES_SEARCH_TIMEOUT:60s}
+      download-timeout: ${DOW_JONES_DOWNLOAD_TIMEOUT:60s}
+      max-concurrent-screenings: ${DOW_JONES_MAX_CONCURRENT_SCREENINGS:1}
+      max-pages: ${DOW_JONES_MAX_PAGES:50}
+      max-pdf-bytes: ${DOW_JONES_MAX_PDF_BYTES:26214400}
+      document-ttl: ${DOW_JONES_DOCUMENT_TTL:60m}
 
 management:
   endpoints:
