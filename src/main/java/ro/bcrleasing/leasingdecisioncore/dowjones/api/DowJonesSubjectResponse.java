@@ -1,9 +1,9 @@
 package ro.bcrleasing.leasingdecisioncore.dowjones.api;
 
-import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesSubjectType;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
 
 public record DowJonesSubjectResponse(
-        DowJonesSubjectType type,
+        SubjectType type,
         String id,
         String displayName
 ) {

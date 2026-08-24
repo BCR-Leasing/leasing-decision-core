@@ -1,7 +1,10 @@
 package ro.bcrleasing.leasingdecisioncore.capability.dowjones;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -100,7 +103,84 @@ public class PlaywrightDowJonesAdapter
     private DowJonesScreeningFacts executeScreening(
             DowJonesSubject subject
     ) {
-        try (Playwright playwright = Playwright.create()) {
+        String configuredBrowserExecutablePath =
+                properties.getBrowserExecutablePath();
+
+        if (!StringUtils.hasText(
+                configuredBrowserExecutablePath
+        )) {
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "Dow Jones Chromium executable path is not configured.",
+                    new IllegalStateException(
+                            "Property 'browser-executable-path' is empty."
+                    )
+            );
+        }
+
+        final Path browserExecutablePath;
+
+        try {
+            browserExecutablePath =
+                    Path.of(
+                                    configuredBrowserExecutablePath.trim()
+                            )
+                            .toAbsolutePath()
+                            .normalize();
+
+        } catch (Exception exception) {
+            LOGGER.error("DOWJONES FAILED", exception);
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "Dow Jones Chromium executable path is invalid: "
+                            + configuredBrowserExecutablePath,
+                    exception
+            );
+        }
+
+        if (!Files.isRegularFile(
+                browserExecutablePath
+        )) {
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "Dow Jones Chromium executable does not exist: "
+                            + browserExecutablePath,
+                    new IllegalStateException(
+                            "Chromium executable was not found."
+                    )
+            );
+        }
+
+        Map<String, String> playwrightEnvironment =
+                new HashMap<>(
+                        System.getenv()
+                );
+
+        playwrightEnvironment.put(
+                "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD",
+                "1"
+        );
+
+        Playwright.CreateOptions createOptions =
+                new Playwright.CreateOptions()
+                        .setEnv(
+                                playwrightEnvironment
+                        );
+
+        LOGGER.info(
+                "Starting Dow Jones browser screening. "
+                        + "subjectType={}, subjectId={}, "
+                        + "browserExecutable={}, headless={}",
+                subject.type(),
+                subject.sourceId(),
+                browserExecutablePath,
+                properties.isHeadless()
+        );
+
+        try (Playwright playwright =
+                     Playwright.create(
+                             createOptions
+                     )) {
 
             BrowserType.LaunchOptions launchOptions =
                     new BrowserType.LaunchOptions()
@@ -109,24 +189,17 @@ public class PlaywrightDowJonesAdapter
                             )
                             .setSlowMo(
                                     properties.getSlowMoMs()
+                            )
+                            .setExecutablePath(
+                                    browserExecutablePath
                             );
-
-            if (StringUtils.hasText(
-                    properties.getBrowserExecutablePath()
-            )) {
-                launchOptions.setExecutablePath(
-                        Path.of(
-                                properties
-                                        .getBrowserExecutablePath()
-                                        .trim()
-                        )
-                );
-            }
 
             Browser browser =
                     playwright
                             .chromium()
-                            .launch(launchOptions);
+                            .launch(
+                                    launchOptions
+                            );
 
             try {
                 Browser.NewContextOptions contextOptions =
@@ -142,7 +215,8 @@ public class PlaywrightDowJonesAdapter
                         );
 
                 try {
-                    Page page = context.newPage();
+                    Page page =
+                            context.newPage();
 
                     page.setDefaultNavigationTimeout(
                             properties
@@ -206,6 +280,7 @@ public class PlaywrightDowJonesAdapter
                 } finally {
                     context.close();
                 }
+
             } finally {
                 browser.close();
             }
@@ -214,10 +289,26 @@ public class PlaywrightDowJonesAdapter
                 ExternalCapabilityException exception
         ) {
             throw exception;
-        } catch (PlaywrightException exception) {
+
+        } catch (
+                PlaywrightException exception
+        ) {
             throw new ExternalCapabilityException(
                     CAPABILITY,
-                    "Dow Jones browser automation failed.",
+                    "Dow Jones browser automation failed. "
+                            + "Chromium executable: "
+                            + browserExecutablePath,
+                    exception
+            );
+
+        } catch (
+                RuntimeException exception
+        ) {
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "Dow Jones browser driver could not be initialized. "
+                            + "Chromium executable: "
+                            + browserExecutablePath,
                     exception
             );
         }

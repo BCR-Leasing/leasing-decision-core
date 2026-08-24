@@ -63,7 +63,7 @@ decision-core:
       password: ${DOW_JONES_PASSWORD}
       headless: ${DOW_JONES_HEADLESS:false}
       ignore-https-errors: ${DOW_JONES_IGNORE_HTTPS_ERRORS:false}
-      browser-executable-path: ${DOW_JONES_BROWSER_EXECUTABLE_PATH}
+      browser-executable-path: ${DOW_JONES_BROWSER_EXECUTABLE_PATH:C:/Users/Gabriel.Ionescu1/AppData/Local/ms-playwright/chromium-1181/chrome-win/chrome.exe}
       slow-mo-ms: ${DOW_JONES_SLOW_MO_MS:250}
       navigation-timeout: ${DOW_JONES_NAVIGATION_TIMEOUT:30s}
       search-timeout: ${DOW_JONES_SEARCH_TIMEOUT:60s}

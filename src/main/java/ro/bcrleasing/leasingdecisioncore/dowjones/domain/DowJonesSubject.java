@@ -1,9 +1,11 @@
 package ro.bcrleasing.leasingdecisioncore.dowjones.domain;
 
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
+
 import java.util.Objects;
 
 public record DowJonesSubject(
-        DowJonesSubjectType type,
+        SubjectType type,
         String sourceId,
         String displayName
 ) {

@@ -5,5 +5,6 @@ public enum FindingCategory {
     BLACKLIST,
     RISK,
     NORKOM,
-    INTERNAL_LIST
+    INTERNAL_LIST,
+    SCREENING
 }

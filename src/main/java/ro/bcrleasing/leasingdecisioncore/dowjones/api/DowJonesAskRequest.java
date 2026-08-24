@@ -1,12 +1,12 @@
 package ro.bcrleasing.leasingdecisioncore.dowjones.api;
 
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesSubjectType;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
+
+import java.util.UUID;
 
 @Schema(
         name = "DowJonesAskRequest",
@@ -41,7 +41,7 @@ public record DowJonesAskRequest(
                 example = "COMPANY",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        DowJonesSubjectType subjectType,
+        SubjectType subjectType,
 
         @NotBlank
         @Schema(

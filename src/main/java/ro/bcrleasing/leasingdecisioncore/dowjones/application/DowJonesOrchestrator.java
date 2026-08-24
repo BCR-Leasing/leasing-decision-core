@@ -1,11 +1,8 @@
 package ro.bcrleasing.leasingdecisioncore.dowjones.application;
 
-import java.util.Objects;
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
 import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.CompanyDataPort;
 import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.model.CompanyData;
 import ro.bcrleasing.leasingdecisioncore.common.exception.InvalidSubjectDataException;
@@ -13,10 +10,12 @@ import ro.bcrleasing.leasingdecisioncore.common.exception.ResourceNotFoundExcept
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesResult;
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesScreeningFacts;
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesSubject;
-import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesSubjectType;
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.StoredDowJonesDocument;
 import ro.bcrleasing.leasingdecisioncore.dowjones.port.out.DowJonesDocumentStorePort;
 import ro.bcrleasing.leasingdecisioncore.dowjones.port.out.DowJonesScreeningPort;
+
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class DowJonesOrchestrator
@@ -63,7 +62,7 @@ public class DowJonesOrchestrator
         );
 
         if (command.subjectType()
-                != DowJonesSubjectType.COMPANY) {
+                != SubjectType.COMPANY) {
 
             throw new InvalidSubjectDataException(
                     "Only COMPANY is supported "
@@ -96,7 +95,7 @@ public class DowJonesOrchestrator
 
         DowJonesSubject subject =
                 new DowJonesSubject(
-                        DowJonesSubjectType.COMPANY,
+                        SubjectType.COMPANY,
                         Long.toString(company.id()),
                         company.name().trim()
                 );
