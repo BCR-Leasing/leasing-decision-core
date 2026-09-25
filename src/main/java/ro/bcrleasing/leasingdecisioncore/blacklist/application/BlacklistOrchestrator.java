@@ -1,220 +1,189 @@
 package ro.bcrleasing.leasingdecisioncore.blacklist.application;
 
-import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-import ro.bcrleasing.leasingdecisioncore.blacklist.domain.*;
-import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.NegativeInformationPort;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistBatchDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistBatchItem;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistDecisionEvaluator;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistSubject;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.InternalNegativeInformationFacts;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.PreparedBlacklistInput;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SibcorFacts;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
+import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.CompanyDataPort;
+import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.RestrictedEntitiesPort;
 import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.SibcorPort;
+import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.model.CompanyData;
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesScreeningFacts;
 import ro.bcrleasing.leasingdecisioncore.dowjones.domain.DowJonesSubject;
 import ro.bcrleasing.leasingdecisioncore.dowjones.port.out.DowJonesScreeningPort;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 @Service
-public class BlacklistOrchestrator implements CheckBlacklistUseCase {
+public class BlacklistOrchestrator
+        implements CheckBlacklistUseCase {
 
-    private final BlacklistSubjectProviderRegistry subjectProviderRegistry;
+    private final CompanyDataPort companyDataPort;
     private final SibcorPort sibcorPort;
-    private final NegativeInformationPort negativeInformationPort;
+    private final RestrictedEntitiesPort restrictedEntitiesPort;
     private final DowJonesScreeningPort dowJonesScreeningPort;
     private final BlacklistDecisionEvaluator decisionEvaluator;
 
     public BlacklistOrchestrator(
-            BlacklistSubjectProviderRegistry subjectProviderRegistry,
+            CompanyDataPort companyDataPort,
             SibcorPort sibcorPort,
-            NegativeInformationPort negativeInformationPort,
+            RestrictedEntitiesPort restrictedEntitiesPort,
             BlacklistDecisionEvaluator decisionEvaluator,
             DowJonesScreeningPort dowJonesScreeningPort
     ) {
-        this.subjectProviderRegistry = subjectProviderRegistry;
+        this.companyDataPort = companyDataPort;
         this.sibcorPort = sibcorPort;
-        this.negativeInformationPort = negativeInformationPort;
+        this.restrictedEntitiesPort = restrictedEntitiesPort;
         this.decisionEvaluator = decisionEvaluator;
         this.dowJonesScreeningPort = dowJonesScreeningPort;
     }
 
     @Override
-    public BlacklistDecision check(
+    public BlacklistBatchDecision check(
             BlacklistAskCommand command
     ) {
-        BlacklistSubjectProvider provider =
-                subjectProviderRegistry.get(
-                        command.subjectType()
+        Objects.requireNonNull(
+                command,
+                "command is required"
+        );
+
+        List<BlacklistBatchItem> items =
+                new ArrayList<>(
+                        command.queries().size()
                 );
 
-        BlacklistSubject subject =
-                provider.loadSubject(
-                        command.leaseId(),
-                        command.subjectId()
+        for (BlacklistQuery query : command.queries()) {
+            Optional<ResolvedQuery> resolvedQuery =
+                    resolveQuery(query);
+
+            if (resolvedQuery.isEmpty()) {
+                items.add(
+                        BlacklistBatchItem
+                                .clientNameNotResolved(
+                                        query.cnpCui()
+                                )
                 );
 
-        if (subject.identifier() == null
-                || subject.identifier().isBlank()) {
+                continue;
+            }
 
-            return decisionEvaluator.evaluate(
-                    new PreparedBlacklistInput(
-                            subject,
-                            SibcorFacts.empty(),
-                            InternalNegativeInformationFacts.notChecked()
+            ResolvedQuery resolved =
+                    resolvedQuery.orElseThrow();
+
+            BlacklistDecision decision =
+                    checkResolvedQuery(resolved);
+
+            items.add(
+                    BlacklistBatchItem.completed(
+                            resolved.cnpCui(),
+                            resolved.clientName(),
+                            decision
                     )
             );
         }
+
+        return new BlacklistBatchDecision(
+                items
+        );
+    }
+
+    private Optional<ResolvedQuery> resolveQuery(
+            BlacklistQuery query
+    ) {
+        if (StringUtils.hasText(
+                query.clientName()
+        )) {
+            return Optional.of(
+                    new ResolvedQuery(
+                            query.cnpCui(),
+                            query.clientName().trim()
+                    )
+            );
+        }
+
+        return companyDataPort
+                .findByCui(
+                        query.cnpCui()
+                )
+                .map(CompanyData::name)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .map(clientName ->
+                        new ResolvedQuery(
+                                query.cnpCui(),
+                                clientName
+                        )
+                );
+    }
+
+    private BlacklistDecision checkResolvedQuery(
+            ResolvedQuery query
+    ) {
+        BlacklistSubject subject =
+                new BlacklistSubject(
+                        SubjectType.COMPANY,
+                        query.cnpCui(),
+                        query.cnpCui(),
+                        query.clientName()
+                );
 
         SibcorFacts sibcorFacts =
                 sibcorPort.checkBlacklist(
                         subject
                 );
 
-        InternalNegativeInformationFacts internalFacts =
-                negativeInformationPort.findByIdentifier(
-                        subject.identifier()
-                );
+        Optional<DowJonesScreeningFacts>
+                dowJonesScreeningFacts =
+                Optional.empty();
 
-        DowJonesScreeningFacts dowJonesFacts = null;
-
-        if (!requiresDowJonesScreening(
-                sibcorFacts
-        )) {
+        if (sibcorFacts.hasBlacklistMatch()) {
             DowJonesSubject dowJonesSubject =
                     new DowJonesSubject(
-                            subject.type(),
-                            subject.sourceId(),
-                            subject.name()
+                            SubjectType.COMPANY,
+                            query.cnpCui(),
+                            query.clientName()
                     );
 
-            dowJonesFacts =
+            DowJonesScreeningFacts screeningFacts =
                     dowJonesScreeningPort.screen(
                             dowJonesSubject
                     );
+
+            dowJonesScreeningFacts =
+                    Optional.of(
+                            screeningFacts
+                    );
         }
 
-        BlacklistDecision decision =
-                decisionEvaluator.evaluate(
-                        new PreparedBlacklistInput(
-                                subject,
-                                sibcorFacts,
-                                internalFacts
-                        )
+        InternalNegativeInformationFacts internalFacts =
+                restrictedEntitiesPort.findByIdentifier(
+                        query.cnpCui()
                 );
 
-        if (dowJonesFacts == null) {
-            return decision;
-        }
-
-        return new BlacklistDecision(
-                decision.subject(),
-                decision.verdict(),
-                decision.reasonCodes(),
-                appendDowJonesFinding(
-                        decision.findings(),
-                        dowJonesFacts
-                ),
-                decision.ruleVersion()
-        );
-    }
-
-    private boolean requiresDowJonesScreening(
-            SibcorFacts sibcorFacts
-    ) {
-        if (sibcorFacts == null) {
-            return false;
-        }
-
-        return sibcorFacts
-                .blacklistItems()
-                .stream()
-                .map(
-                        SibcorBlacklistItem::foundFlag
-                )
-                .anyMatch(
-                        this::isTrueFlag
-                );
-    }
-
-    private boolean isTrueFlag(
-            Object foundFlag
-    ) {
-        if (Boolean.TRUE.equals(
-                foundFlag
-        )) {
-            return true;
-        }
-
-        if (foundFlag instanceof String stringValue) {
-            return Boolean.parseBoolean(
-                    stringValue.trim()
-            );
-        }
-
-        return false;
-    }
-
-    private DecisionFinding toDowJonesFinding(
-            DowJonesScreeningFacts dowJonesFacts
-    ) {
-        Map<String, Object> details =
-                new LinkedHashMap<>();
-
-        Map<String, Object> document =
-                new LinkedHashMap<>();
-
-        details.put(
-                "processingStatus",
-                "COMPLETED"
-        );
-
-        details.put(
-                "screeningStatus",
-                dowJonesFacts
-                        .screeningStatus()
-                        .name()
-        );
-
-        details.put(
-                "resultsFound",
-                dowJonesFacts.resultsFound()
-        );
-
-        details.put(
-                "matches",
-                dowJonesFacts.matches()
-        );
-
-        details.put(
-                "document",
-                document
-        );
-
-        return new DecisionFinding(
-                FindingSource.DOW_JONES,
-                FindingCategory.SCREENING,
-                details
-        );
-    }
-
-    private List<DecisionFinding> appendDowJonesFinding(
-            List<DecisionFinding> existingFindings,
-            DowJonesScreeningFacts dowJonesFacts
-    ) {
-        List<DecisionFinding> findings =
-                new ArrayList<>(
-                        existingFindings == null
-                                ? List.of()
-                                : existingFindings
-                );
-
-        findings.add(
-                toDowJonesFinding(
-                        dowJonesFacts
+        return decisionEvaluator.evaluate(
+                new PreparedBlacklistInput(
+                        subject,
+                        sibcorFacts,
+                        internalFacts,
+                        dowJonesScreeningFacts
                 )
         );
+    }
 
-        return List.copyOf(
-                findings
-        );
+    private record ResolvedQuery(
+            String cnpCui,
+            String clientName
+    ) {
     }
 }

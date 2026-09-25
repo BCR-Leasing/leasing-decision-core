@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import ro.bcrleasing.leasingdecisioncore.common.exception.ExternalCapabilityException;
@@ -104,10 +105,7 @@ final class DowJonesPage {
                         )
         );
 
-        waitVisible(
-                USER_INPUT,
-                properties.getNavigationTimeout()
-        );
+        waitForLoginOrDismissMaintenanceNotice();
 
         page.locator(USER_INPUT)
                 .fill(properties.getUsername());
@@ -282,9 +280,7 @@ final class DowJonesPage {
             } catch (
                     PlaywrightException
                             | NumberFormatException ignored
-            ) {
-                // The page may still be rendering.
-            }
+            ) {}
 
             page.waitForTimeout(250);
         }
@@ -419,13 +415,32 @@ final class DowJonesPage {
                     return;
                 }
             } catch (PlaywrightException ignored) {
-                // The DOM can change while pagination is advancing.
             }
 
             page.waitForTimeout(250);
         }
 
         throw capabilityError(failureMessage);
+    }
+
+    private void waitForLoginOrDismissMaintenanceNotice() {
+        double timeoutMs = millis(properties.getNavigationTimeout());
+
+        Locator loginInput = page
+                .locator(USER_INPUT)
+                .filter(new Locator.FilterOptions().setVisible(true));
+        Locator maintenanceOk = page
+                .getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(Pattern.compile("^\\s*OK\\s*$", Pattern.CASE_INSENSITIVE)))
+                .filter(new Locator.FilterOptions().setVisible(true));
+
+        loginInput.or(maintenanceOk).first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE).setTimeout(timeoutMs));
+
+        if (maintenanceOk.isVisible()) {
+            maintenanceOk.click(new Locator.ClickOptions().setTimeout(timeoutMs));
+            maintenanceOk.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN).setTimeout(timeoutMs));
+        }
+
+        waitVisible(USER_INPUT, properties.getNavigationTimeout());
     }
 
     private double millis(Duration duration) {

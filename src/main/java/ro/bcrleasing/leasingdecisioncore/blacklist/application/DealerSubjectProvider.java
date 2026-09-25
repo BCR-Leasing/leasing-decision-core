@@ -39,8 +39,7 @@ public class DealerSubjectProvider implements BlacklistSubjectProvider {
                 SubjectType.DEALER,
                 Long.toString(dealer.id()),
                 dealer.cui(),
-                dealer.name(),
-                null
+                dealer.name()
         );
     }
 }

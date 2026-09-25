@@ -9,9 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import ro.bcrleasing.leasingdecisioncore.blacklist.application.BlacklistAskCommand;
 import ro.bcrleasing.leasingdecisioncore.blacklist.application.CheckBlacklistUseCase;
-import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistBatchDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistItemStatus;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.Verdict;
 
 @Service
 public class AskOrchestrator {
@@ -34,10 +37,14 @@ public class AskOrchestrator {
     public BlacklistDecisionEnvelope executeBlacklist(BlacklistAskCommand command) {
         Objects.requireNonNull(command, "command is required");
         DecisionContext context = contextFactory.create(command.requestId());
-        BlacklistDecision decision = checkBlacklistUseCase.check(command);
+        BlacklistBatchDecision decision = checkBlacklistUseCase.check(command);
         Instant completedAt = Instant.now(clock);
         long durationMs = Duration.between(context.startedAt(), completedAt).toMillis();
-        LOGGER.info("Blacklist ask completed. " + "requestId={}, askId={}, subjectType={}, " + "verdict={}, durationMs={}", context.requestId(), context.askId(), command.subjectType(), decision.verdict(), durationMs);
+        long notFoundCount = decision.items().stream().filter(item -> item.status() == BlacklistItemStatus.NOT_FOUND).count();
+        long passedCount = decision.items().stream().filter(item -> item.status() == BlacklistItemStatus.COMPLETED).filter(item -> item.decision().verdict() == Verdict.PASSED).count();
+        long failedCount = decision.items().stream().filter(item -> item.status() == BlacklistItemStatus.COMPLETED).filter(item -> item.decision().verdict() == Verdict.FAILED).count();
+        LOGGER.info("Blacklist batch completed. requestId={}, askId={}, itemCount={}, passedCount={}, failedCount={}, notFoundCount={}, durationMs={}", context.requestId(), context.askId(), decision.items().size(), passedCount, failedCount, notFoundCount, durationMs);
+
         return new BlacklistDecisionEnvelope(context, decision, completedAt);
     }
 }

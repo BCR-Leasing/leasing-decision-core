@@ -72,6 +72,7 @@ decision-core:
       max-pages: ${DOW_JONES_MAX_PAGES:50}
       max-pdf-bytes: ${DOW_JONES_MAX_PDF_BYTES:26214400}
       document-ttl: ${DOW_JONES_DOCUMENT_TTL:60m}
+      document-directory: ${DOW_JONES_RESULT_PATH:C:\Users\Gabriel.Ionescu1\dow-jones-results}
 
 management:
   endpoints:

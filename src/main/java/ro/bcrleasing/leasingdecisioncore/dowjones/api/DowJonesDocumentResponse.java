@@ -9,6 +9,7 @@ public record DowJonesDocumentResponse(
         long size,
         String sha256,
         String downloadUrl,
-        Instant expiresAt
+        Instant expiresAt,
+        String documentPath
 ) {
 }

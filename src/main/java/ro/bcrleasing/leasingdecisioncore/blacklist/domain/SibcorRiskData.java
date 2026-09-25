@@ -4,10 +4,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public record SibcorRiskData(
-        Object foundFlag,
-        Map<String, Object> details
-) {
+public record SibcorRiskData(Object foundFlag, Map<String, Object> details) {
+
     public SibcorRiskData {
         details = immutableMap(details);
     }
@@ -16,6 +14,7 @@ public record SibcorRiskData(
         if (source == null || source.isEmpty()) {
             return Map.of();
         }
+
         return Collections.unmodifiableMap(new LinkedHashMap<>(source));
     }
 }

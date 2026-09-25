@@ -1,5 +1,7 @@
 package ro.bcrleasing.leasingdecisioncore.capability.sibcor;
 
+import java.net.URI;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -7,6 +9,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistSubject;
 import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SibcorFacts;
 import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.SibcorPort;
@@ -14,11 +17,9 @@ import ro.bcrleasing.leasingdecisioncore.common.exception.ExternalCapabilityExce
 import ro.bcrleasing.leasingdecisioncore.common.exception.InvalidSubjectDataException;
 import tools.jackson.databind.JsonNode;
 
-import java.math.BigInteger;
-import java.net.URI;
-
 @Component
-public class SibcorHttpAdapter implements SibcorPort {
+public class SibcorHttpAdapter
+        implements SibcorPort {
 
     private static final String CAPABILITY = "SIBCOR";
 
@@ -27,7 +28,12 @@ public class SibcorHttpAdapter implements SibcorPort {
     private final SibcorAccessTokenProvider tokenProvider;
     private final SibcorResponseMapper responseMapper;
 
-    public SibcorHttpAdapter(@Qualifier("sibcorRestClient") RestClient restClient, SibcorProperties properties, SibcorAccessTokenProvider tokenProvider, SibcorResponseMapper responseMapper
+    public SibcorHttpAdapter(
+            @Qualifier("sibcorRestClient")
+            RestClient restClient,
+            SibcorProperties properties,
+            SibcorAccessTokenProvider tokenProvider,
+            SibcorResponseMapper responseMapper
     ) {
         this.restClient = restClient;
         this.properties = properties;
@@ -36,135 +42,193 @@ public class SibcorHttpAdapter implements SibcorPort {
     }
 
     @Override
-    public SibcorFacts checkBlacklist(BlacklistSubject subject) {
-        String cnpCui = normalizeIdentifier(
-                subject.identifier()
-        );
+    public SibcorFacts checkBlacklist(
+            BlacklistSubject subject
+    ) {
+        String cnpCui =
+                normalizeIdentifier(
+                        subject.identifier()
+                );
+
+        String clientName =
+                normalizeClientName(
+                        subject.name()
+                );
 
         String accessToken =
                 tokenProvider.getAccessToken();
 
         try {
-            JsonNode response = executeRequest(
-                    cnpCui,
-                    subject.name(),
-                    accessToken
+            JsonNode response =
+                    executeRequest(
+                            cnpCui,
+                            clientName,
+                            accessToken
+                    );
+
+            return responseMapper.map(
+                    response,
+                    cnpCui
             );
 
-            return responseMapper.map(response);
-        } catch (
-                RestClientResponseException exception
-        ) {
-
+        } catch (RestClientResponseException exception) {
             if (exception.getStatusCode().value() == 401) {
                 tokenProvider.invalidate();
 
                 return retryWithNewToken(
                         cnpCui,
-                        subject.name()
+                        clientName
                 );
             }
 
             throw toCapabilityException(exception);
+
         } catch (RestClientException exception) {
-            throw new ExternalCapabilityException(CAPABILITY, "SIBCOR blacklist call failed.", exception);
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "SIBCOR blacklist call failed.",
+                    exception
+            );
         }
     }
 
-    private SibcorFacts retryWithNewToken(String cnpCui, String clientName) {
+    private SibcorFacts retryWithNewToken(
+            String cnpCui,
+            String clientName
+    ) {
         try {
-            JsonNode response = executeRequest(
-                    cnpCui,
-                    clientName,
-                    tokenProvider.getAccessToken()
+            JsonNode response =
+                    executeRequest(
+                            cnpCui,
+                            clientName,
+                            tokenProvider.getAccessToken()
+                    );
+
+            return responseMapper.map(
+                    response,
+                    cnpCui
             );
 
-            return responseMapper.map(response);
-        } catch (
-                RestClientResponseException exception
-        ) {
+        } catch (RestClientResponseException exception) {
             throw toCapabilityException(exception);
+
         } catch (RestClientException exception) {
-            throw new ExternalCapabilityException(CAPABILITY, "SIBCOR blacklist retry failed.", exception);
+            throw new ExternalCapabilityException(
+                    CAPABILITY,
+                    "SIBCOR blacklist retry failed.",
+                    exception
+            );
         }
     }
 
-    private JsonNode executeRequest(String cnpCui, String clientName, String accessToken) {
+    private JsonNode executeRequest(
+            String cnpCui,
+            String clientName,
+            String accessToken
+    ) {
+        URI requestUri =
+                buildBlacklistUri(
+                        cnpCui,
+                        clientName
+                );
 
-        URI requestUri = buildBlacklistUri(cnpCui, clientName);
-
-        RestClient.RequestHeadersSpec<?> requestSpec =
-                restClient
-                        .get()
-                        .uri(requestUri);
-
-        requestSpec.headers(headers -> headers.setBearerAuth(accessToken));
-
-        return requestSpec
+        return restClient
+                .get()
+                .uri(requestUri)
+                .headers(headers ->
+                        headers.setBearerAuth(accessToken)
+                )
                 .retrieve()
                 .body(JsonNode.class);
     }
 
-    private URI buildBlacklistUri(String cnpCui, String clientName) {
+    private URI buildBlacklistUri(
+            String cnpCui,
+            String clientName
+    ) {
         String endpointUrl =
-                removeTrailingSlash(properties.getBaseUrl())
+                removeTrailingSlash(
+                        properties.getBaseUrl()
+                )
                         + "/"
                         + removeLeadingSlash(
-                        properties.getBlacklistPath()
-                );
-
-        UriComponentsBuilder builder =
-                UriComponentsBuilder
-                        .fromUriString(endpointUrl)
-                        .queryParam(
-                                "cnpCui",
-                                cnpCui
+                                properties.getBlacklistPath()
                         );
 
-        if (StringUtils.hasText(clientName)) {
-            builder.queryParam(
-                    "clientName",
-                    clientName
-            );
-        }
-
-        return builder
+        return UriComponentsBuilder
+                .fromUriString(endpointUrl)
+                .queryParam(
+                        "cnpCui",
+                        cnpCui
+                )
+                .queryParam(
+                        "clientName",
+                        clientName
+                )
                 .build()
                 .encode()
                 .toUri();
     }
 
-    private String normalizeIdentifier(String identifier) {
+    private String normalizeIdentifier(
+            String identifier
+    ) {
         if (!StringUtils.hasText(identifier)) {
-            throw new InvalidSubjectDataException("The identifier is required for the SIBCOR call.");
+            throw new InvalidSubjectDataException(
+                    "The identifier is required for the SIBCOR call."
+            );
         }
 
-        String trimmed = identifier.trim();
+        String normalized = identifier.trim();
 
-        if (!trimmed.matches("\\d+")) {
-            throw new InvalidSubjectDataException("The SIBCOR identifier must contain only digits.");
+        if (!normalized.matches("\\d+")) {
+            throw new InvalidSubjectDataException(
+                    "The SIBCOR identifier must contain only digits."
+            );
         }
 
-        return new BigInteger(trimmed).toString();
+        return normalized;
     }
 
-    private ExternalCapabilityException toCapabilityException(RestClientResponseException exception) {
+    private String normalizeClientName(
+            String clientName
+    ) {
+        if (!StringUtils.hasText(clientName)) {
+            throw new InvalidSubjectDataException(
+                    "The client name is required for the SIBCOR call."
+            );
+        }
+
+        return clientName.trim();
+    }
+
+    private ExternalCapabilityException toCapabilityException(
+            RestClientResponseException exception
+    ) {
         return new ExternalCapabilityException(
                 CAPABILITY,
                 "SIBCOR returned HTTP status "
-                        + exception
-                        .getStatusCode()
-                        .value()
+                        + exception.getStatusCode().value()
                         + ".",
                 exception
         );
     }
 
-    private String removeTrailingSlash(String value) {
-        return value.replaceFirst("/+$", "");
+    private String removeTrailingSlash(
+            String value
+    ) {
+        return value.replaceFirst(
+                "/+$",
+                ""
+        );
     }
 
-    private String removeLeadingSlash(String value) {
-        return value.replaceFirst("^/+", "");
+    private String removeLeadingSlash(
+            String value
+    ) {
+        return value.replaceFirst(
+                "^/+",
+                ""
+        );
     }
 }

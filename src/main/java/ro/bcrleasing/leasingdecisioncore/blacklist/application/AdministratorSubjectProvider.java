@@ -56,8 +56,7 @@ public class AdministratorSubjectProvider
                 SubjectType.ADMINISTRATOR,
                 Long.toString(kyc.id()),
                 kyc.ocrCnp(),
-                name,
-                "Administrator"
+                name
         );
     }
 

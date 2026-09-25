@@ -1,7 +1,8 @@
 package ro.bcrleasing.leasingdecisioncore.blacklist.application;
 
-import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistBatchDecision;
 
 public interface CheckBlacklistUseCase {
-    BlacklistDecision check(BlacklistAskCommand command);
+
+    BlacklistBatchDecision check(BlacklistAskCommand command);
 }

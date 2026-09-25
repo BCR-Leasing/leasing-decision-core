@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class DowJonesProperties {
 
     private String url = "https://riskcenter.dowjones.com/dashboard";
+    private String documentDirectory;
     private String username;
     private String password;
     private boolean headless = true;
@@ -155,4 +156,13 @@ public class DowJonesProperties {
     ) {
         this.maxPdfBytes = maxPdfBytes;
     }
+
+    public String getDocumentDirectory() {
+        return documentDirectory;
+    }
+
+    public void setDocumentDirectory(String documentDirectory) {
+        this.documentDirectory = documentDirectory;
+    }
+
 }

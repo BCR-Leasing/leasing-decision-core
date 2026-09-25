@@ -44,8 +44,7 @@ public class HiddenRealBeneficiarySubjectProvider
                 SubjectType.HIDDEN_REAL_BENEFICIARY,
                 beneficiary.sourceId(),
                 beneficiary.identifier(),
-                beneficiary.name(),
-                "Beneficiar Real"
+                beneficiary.name()
         );
     }
 }

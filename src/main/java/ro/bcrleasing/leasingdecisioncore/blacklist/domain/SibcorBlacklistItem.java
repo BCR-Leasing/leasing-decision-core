@@ -8,14 +8,39 @@ public record SibcorBlacklistItem(
         Object foundFlag,
         Map<String, Object> details
 ) {
+
     public SibcorBlacklistItem {
-        details = immutableMap(details);
+        details = immutableMap(
+                details
+        );
     }
 
-    private static Map<String, Object> immutableMap(Map<String, Object> source) {
-        if (source == null || source.isEmpty()) {
+    public boolean isFound() {
+        if (foundFlag instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+
+        if (foundFlag instanceof String stringValue) {
+            return Boolean.parseBoolean(
+                    stringValue.trim()
+            );
+        }
+
+        return false;
+    }
+
+    private static Map<String, Object> immutableMap(
+            Map<String, Object> source
+    ) {
+        if (source == null
+                || source.isEmpty()) {
             return Map.of();
         }
-        return Collections.unmodifiableMap(new LinkedHashMap<>(source));
+
+        return Collections.unmodifiableMap(
+                new LinkedHashMap<>(
+                        source
+                )
+        );
     }
 }

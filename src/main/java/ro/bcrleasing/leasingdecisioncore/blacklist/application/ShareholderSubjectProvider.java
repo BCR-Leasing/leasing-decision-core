@@ -69,8 +69,7 @@ public class ShareholderSubjectProvider
                 SubjectType.SHAREHOLDER,
                 Long.toString(kyc.id()),
                 kyc.ocrCnp(),
-                kyc.title(),
-                role
+                kyc.title()
         );
     }
 }

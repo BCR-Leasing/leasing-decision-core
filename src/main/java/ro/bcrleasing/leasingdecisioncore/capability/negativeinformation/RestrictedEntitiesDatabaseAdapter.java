@@ -8,21 +8,22 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import ro.bcrleasing.leasingdecisioncore.blacklist.domain.InternalNegativeInformationFacts;
-import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.NegativeInformationPort;
+import ro.bcrleasing.leasingdecisioncore.blacklist.port.out.RestrictedEntitiesPort;
 
 @Repository
-public class NegativeInformationDatabaseAdapter
-        implements NegativeInformationPort {
+public class RestrictedEntitiesDatabaseAdapter
+        implements RestrictedEntitiesPort {
 
     private static final String SQL = """
             SELECT *
-              FROM catalog_parteneri_informatii_negative
-             WHERE identificator = :identifier
+              FROM restricted_entities
+             WHERE identifier = :identifier
+             LIMIT 1
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public NegativeInformationDatabaseAdapter(
+    public RestrictedEntitiesDatabaseAdapter(
             NamedParameterJdbcTemplate jdbcTemplate
     ) {
         this.jdbcTemplate = jdbcTemplate;

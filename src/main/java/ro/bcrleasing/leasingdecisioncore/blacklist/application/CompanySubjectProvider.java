@@ -39,8 +39,7 @@ public class CompanySubjectProvider implements BlacklistSubjectProvider {
                 SubjectType.COMPANY,
                 Long.toString(company.id()),
                 company.cui(),
-                company.name(),
-                null
+                company.name()
         );
     }
 }

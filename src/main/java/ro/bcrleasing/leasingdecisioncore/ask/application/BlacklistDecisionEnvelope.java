@@ -3,14 +3,13 @@ package ro.bcrleasing.leasingdecisioncore.ask.application;
 import java.time.Instant;
 import java.util.Objects;
 
-import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistDecision;
+import ro.bcrleasing.leasingdecisioncore.blacklist.domain.BlacklistBatchDecision;
 
-public record BlacklistDecisionEnvelope(DecisionContext context,
-                                        BlacklistDecision decision,
-                                        Instant completedAt) {
+public record BlacklistDecisionEnvelope(DecisionContext context, BlacklistBatchDecision decision, Instant completedAt) {
+
     public BlacklistDecisionEnvelope {
-        Objects.requireNonNull(context, "context is required");
-        Objects.requireNonNull(decision, "decision is required");
-        Objects.requireNonNull(completedAt, "completedAt is required");
+        context = Objects.requireNonNull(context, "context is required");
+        decision = Objects.requireNonNull(decision, "decision is required");
+        completedAt = Objects.requireNonNull(completedAt, "completedAt is required");
     }
 }

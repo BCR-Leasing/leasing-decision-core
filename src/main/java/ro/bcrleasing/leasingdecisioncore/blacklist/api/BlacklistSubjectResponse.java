@@ -5,5 +5,4 @@ import ro.bcrleasing.leasingdecisioncore.blacklist.domain.SubjectType;
 public record BlacklistSubjectResponse(
         SubjectType type,
         String id,
-        String displayName,
-        String role) { }
+        String displayName) { }
